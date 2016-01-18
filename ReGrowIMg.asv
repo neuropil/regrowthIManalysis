@@ -483,18 +483,23 @@ for imI = 1:length(imageNames)
     % Exclude all pixels outside polygon
     image2thresh(~wholePolymask) = 0;
     % Create image with pixels above threshold
-    finalImage = image2thresh > pixelThreshold;
+    finalImage = image2thresh.(layerNs{scLayi2}) > pixelThreshold.(layerNs{scLayi2});
     % Calculate area of pixels above threshold
-    densityArea = bwarea(finalImage);
+    densityArea.(layerNs{scLayi2}) = bwarea(finalImage.(layerNs{scLayi2}));
     % Calculate fraction of area occupied by pixels above threshold
-    handles.pixelInfo.fracDenArea = densityArea/handles.pixelInfo.Area;
+    handles.pixelInfo.(layerNs{scLayi2}).fracDenArea = densityArea.(layerNs{scLayi2})/handles.pixelInfo.(layerNs{scLayi2}).Area;
 
     % Save data from each section
     handles.PixelDataOut.OD{imI} = handles.pixelInfo;
     currentData = get(handles.dataTable,'Data');
-    
-    currentData{imI} = ceil(handles.pixelInfo.fracDenArea*1000)/1000;
-    
+    for neD = 1:numel(layerNs)
+        
+        if isnan(handles.pixelInfo.(layerNs{neD}).fracDenArea)
+            currentData{imI,neD} = NaN;
+        else
+            currentData{imI,neD} = ceil(handles.pixelInfo.(layerNs{neD}).fracDenArea*1000)/1000;
+        end
+    end
     set(handles.dataTable,'Data',currentData);
     
 end

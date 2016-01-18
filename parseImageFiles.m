@@ -119,15 +119,22 @@ if chanNum == 1
 % Look for number
 elseif chanNum > 1
     
-    imFnums = cellfun(@(x) str2double(regexp(x,'[0-9]+','match')), imFileNames);
-    
-    imFnums = num2cell(imFnums);
-    
-    % Sort and save into struct for output
-    [~,imageOrder] = sort(cell2mat(imFnums));
-    
-    imageID.Image.Nums = imFnums(imageOrder);
-    imageID.Image.FNames = imFileNames(imageOrder);
+    try imFnums = cellfun(@(x) str2double(regexp(x,'[0-9]+','match')), imFileNames);
+        
+        imFnums = num2cell(imFnums);
+        
+        % Sort and save into struct for output
+        [~,imageOrder] = sort(cell2mat(imFnums));
+        
+        imageID.Image.Nums = imFnums(imageOrder);
+        imageID.Image.FNames = imFileNames(imageOrder);
+        
+    catch % Abritrary
+        
+        imageID.Image.Nums = num2cell(1:1:length(imFileNames));
+        imageID.Image.FNames = imFileNames;
+        
+    end
     
 end
 
