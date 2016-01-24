@@ -798,11 +798,13 @@ handles.X = [-handles.xPoints/2 handles.xPoints/2 handles.xPoints/2 -handles.xPo
 handles.Y = [handles.yPoints/2 handles.yPoints/2 -handles.yPoints/2 -handles.yPoints/2 handles.yPoints/2];
 handles.P = [handles.X;handles.Y];
 
-ct = cos(handles.theta);
-st = sin(handles.theta);
+ct = cos(theta);
+st = sin(theta);
 
 handles.R = [ct -st;st ct];
 handles.P = handles.R * handles.P;
+
+
 
 cla(handles.imDisplay);
 
