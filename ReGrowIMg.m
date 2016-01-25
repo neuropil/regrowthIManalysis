@@ -72,6 +72,8 @@ set(handles.zo,'Visible','off')
 set(handles.pan,'Visible','off')
 set(handles.optDen,'checked','off')
 
+set(handles.accept,'Enable','off')
+
 
 
 set(handles.imDisplay,'Visible','off')
@@ -329,11 +331,11 @@ function optDen_Callback(hObject, eventdata, handles)
 % to be saved
 
 
-set(handles.dataTable,'Data',0,'ColumnName',{'Red','Green'},...
+set(handles.dataTable,'Data',[0,0;0,0],'ColumnName',{'Red','Green'},...
     'ColumnWidth',{40 40});
 
 cla(handles.imDisplay);
-set(handles.dataTable,'Data','');
+% set(handles.dataTable,'Data','');
 % 3. Load file names into list panel
 handles.imageNames = get(handles.filelist,'String');
 % 4. Load first image into Display
@@ -377,16 +379,16 @@ while chanToggle
 end
 
 % User choose Analyze Channel
-analyzeChan = questdlg('Choose channel to Analyze Optical Density','ANALYZE RGB','R','G','B','B');
-
-switch analyzeChan
-    case 'R'
-        handles.choseAChan = 1;
-    case 'G'
-        handles.choseAChan = 2;
-    case 'B'
-        handles.choseAChan = 3;
-end
+% analyzeChan = questdlg('Choose channel to Analyze Optical Density','ANALYZE RGB','R','G','B','B');
+% 
+% switch analyzeChan
+%     case 'R'
+%         handles.choseAChan = 1;
+%     case 'G'
+%         handles.choseAChan = 2;
+%     case 'B'
+%         handles.choseAChan = 3;
+% end
 
 handles.fileNUM = 1;
 % MAKE TEXT for aCCept button say START 
@@ -425,7 +427,7 @@ handles.PolyXC = NaN;
 handles.PolyYC = NaN;
 
 % Draw NTS polygon
-drawText = sprintf('Draw Polygon for this section');
+drawText = sprintf('Move ROI Box over junction');
 set(handles.mesText,'String', drawText);
 
 %         [~, handles.PolyXC, handles.PolyYC] = roipoly(chan2disp);
@@ -449,11 +451,8 @@ handles.P = pout;
 
 plot(handles.P(1,:) + handles.cenX, handles.P(2,:) + handles.cenY,'-r');
 
-handles.PolyXC = handles.P(1,:) + handles.cenX;
-handles.PolyYC = handles.P(2,:) + handles.cenY;
 
-handles.polyMask = poly2mask(handles.PolyXC,handles.PolyYC,dim1,dim2);
-
+set(handles.accept,'Enable','on')
 
 
 guidata(hObject, handles);
@@ -792,11 +791,7 @@ function clockwise_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
-handles.theta =  handles.theta + 0.1;
-
-handles.X = [-handles.xPoints/2 handles.xPoints/2 handles.xPoints/2 -handles.xPoints/2 -handles.xPoints/2];
-handles.Y = [handles.yPoints/2 handles.yPoints/2 -handles.yPoints/2 -handles.yPoints/2 handles.yPoints/2];
-handles.P = [handles.X;handles.Y];
+handles.theta =  handles.theta + 0.01;
 
 ct = cos(handles.theta);
 st = sin(handles.theta);
@@ -816,33 +811,6 @@ guidata(hObject, handles);
 
 
 
-% --- Executes on button press in counterwise.
-function counterwise_Callback(hObject, eventdata, handles)
-% hObject    handle to counterwise (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-handles.theta =  handles.theta - 0.1;
-
-X = [-xPoints/2 xPoints/2 xPoints/2 -xPoints/2 -xPoints/2];
-Y = [yPoints/2 yPoints/2 -yPoints/2 -yPoints/2 yPoints/2];
-P = [X;Y];
-
-ct = cos(theta);
-st = sin(theta);
-
-R = [ct -st;st ct];
-Pout = R * P;
-
-handles.P = pout;
-
-cla(handles.imDisplay);
-
-imshow(handles.chan2disp);
-
-plot(handles.P(1,:) + handles.cenX, handles.P(2,:) + handles.cenY,'-r');
-
-guidata(hObject, handles);
 
 
 
@@ -855,68 +823,153 @@ function accept_Callback(hObject, eventdata, handles)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
 
+% Get RED and GREEN 
+% Get File number
 
+if handles.fileNUM < length(handles.filelist.String)+1
+    
+    handles.PolyXC = handles.P(1,:) + handles.cenX;
+    handles.PolyYC = handles.P(2,:) + handles.cenY;
+    
+    
+    for ci = 1:2
+        
+        % ci = 1 = Red Channel
+        % ci = 2 = Green Channel
 
-
-
-
-image2analyze = handles.liveImage(:,:,handles.choseAChan);
-
-% User choose Analyze Channel
-
-wholePolymask = poly2mask(handles.PolyXC,handles.PolyYC,handles.dim1,handles.dim2); % Get mask
-
-handles.pixelInfo = regionprops(wholePolymask,image2analyze,'MeanIntensity','PixelValues','Area');
-
-% Calculate quadrant corners
-
-% [B,~,~,~] = bwboundaries(mNtb_mask);
-
-xmax = max(handles.PolyXC);
-ymax = max(handles.PolyYC);
-
-xCor = handles.PolyXC(2:end);
-yCor = handles.PolyYC(2:end);
-
-yCorR = zeros(numel(yCor),1);
-for yi = 1:numel(yCor)
-    yCorR(yi) = yCor(yi) + rand;
-end
-
-yCor = yCorR;
-
-xCorR = zeros(numel(xCor),1);
-for xi = 1:numel(xCor)
-    xCorR(xi) = xCor(xi) + rand;
-end
-
-xCor = xCorR;
-
-corners = cornerFind(yCor, ymax, xCor, xmax);
-
-% Calculate pixel threshold
-pixelThreshold = mean(handles.pixelInfo.PixelValues) + (std(double(handles.pixelInfo.PixelValues))*2);
-% Copy original image
-image2thresh = image2analyze;
-% Exclude all pixels outside polygon
-image2thresh(~wholePolymask) = 0;
-% Create image with pixels above threshold
-finalImage = image2thresh > pixelThreshold;
-% Calculate area of pixels above threshold
-densityArea = bwarea(finalImage);
-% Calculate fraction of area occupied by pixels above threshold
-handles.pixelInfo.fracDenArea = densityArea/handles.pixelInfo.Area;
-
-% Save data from each section
-handles.PixelDataOut.OD{imI} = handles.pixelInfo;
-currentData = get(handles.dataTable,'Data');
-
-currentData{imI} = ceil(handles.pixelInfo.fracDenArea*1000)/1000;
-
-set(handles.dataTable,'Data',currentData);
-
-
-if handles.fileNUM == length(handles.filelist)
+        image2analyze = handles.liveImage(:,:,ci);
+        im2dB = im2double(image2analyze);
+        
+        % User choose Analyze Channel
+        wholePolymask = poly2mask(handles.PolyXC,handles.PolyYC,handles.dim1,handles.dim2); % Get mask
+        handles.pixelInfo = regionprops(wholePolymask,im2dB,'MeanIntensity','PixelValues','Area');
+        
+        % Calculate quadrant corners
+        
+        % [B,~,~,~] = bwboundaries(mNtb_mask);
+        
+        % TO CALCULATE QUADRANTS
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % xmax = max(handles.PolyXC);
+        % ymax = max(handles.PolyYC);
+        
+        % xCor = handles.PolyXC(2:end);
+        % yCor = handles.PolyYC(2:end);
+        
+        % yCorR = zeros(numel(yCor),1);
+        % for yi = 1:numel(yCor)
+        %     yCorR(yi) = yCor(yi) + rand;
+        % end
+        
+        % yCor = yCorR;
+        
+        % xCorR = zeros(numel(xCor),1);
+        % for xi = 1:numel(xCor)
+        %     xCorR(xi) = xCor(xi) + rand;
+        % end
+        
+        % xCor = xCorR;
+        
+        % corners = cornerFind(yCor, ymax, xCor, xmax);
+        
+        % TO CALCULATE QUADRANTS
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        % Calculate pixel threshold
+        pixelThreshold = mean(handles.pixelInfo.PixelValues) + (std(double(handles.pixelInfo.PixelValues))*2);
+%         pixelThreshold = median(handles.pixelInfo.PixelValues)+ iqr(handles.pixelInfo.PixelValues);
+        % Copy original image
+        image2thresh = im2dB;
+        % Exclude all pixels outside polygon
+        image2thresh(~wholePolymask) = 0;
+        % Create image with pixels above threshold
+        finalImage = image2thresh > pixelThreshold;
+        % Calculate area of pixels above threshold
+        densityArea = bwarea(finalImage);
+        % Calculate fraction of area occupied by pixels above threshold
+        handles.pixelInfo.fracDenArea = densityArea/handles.pixelInfo.Area;
+        
+        % Save data from each section
+        handles.PixelDataOut.OD{handles.fileNUM,ci} = handles.pixelInfo;
+        currentData = get(handles.dataTable,'Data');
+        
+        currentData(handles.fileNUM,ci) = ceil(handles.pixelInfo.fracDenArea*1000)/1000;
+        
+        set(handles.dataTable,'Data',currentData);
+        
+        
+        
+    end
+    
+    handles.fileNUM = handles.fileNUM + 1;
+    
+    % Load next image
+    
+    if handles.fileNUM < length(handles.filelist.String)+1
+        
+        axes(handles.imDisplay);
+        
+        set(handles.fnameBox,'String',handles.imageNames{handles.fileNUM})
+        
+        set(handles.filelist,'Value',handles.fileNUM);
+        
+        cla(handles.imDisplay);
+        handles.liveImage = imread(handles.imageNames{handles.fileNUM});
+        [dim1,dim2,~] = size(handles.liveImage);
+        
+        handles.dim1 = dim1;
+        handles.dim2 = dim2;
+        
+        % Make inverted image
+        image2invert = handles.liveImage(:,:,handles.choseDChan);
+        invertImInterest = 65535-image2invert;
+        
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%
+        
+        handles.chan2disp = invertImInterest;
+        %     chan2disp = blankImage;
+        imshow(handles.chan2disp)
+        
+        hold on;
+        
+        handles.PolyXC = NaN;
+        handles.PolyYC = NaN;
+        
+        % Draw NTS polygon
+        drawText = sprintf('Move ROI Box over junction');
+        set(handles.mesText,'String', drawText);
+        
+        %         [~, handles.PolyXC, handles.PolyYC] = roipoly(chan2disp);
+        
+        % Create box values
+        
+        handles.xPoints = ceil(handles.dim1*0.8);
+        handles.yPoints = ceil(handles.dim2*0.2);
+        
+        handles.xstart = ceil((handles.dim1 - handles.xPoints)/2);
+        handles.ystart = ceil(handles.dim2/2);
+        
+        handles.cenX = round((handles.xPoints/2) + handles.xstart);
+        handles.cenY = round((handles.yPoints/2) + handles.ystart);
+        
+        handles.theta = 0;
+        
+        pout = computRotation(handles.xPoints,handles.yPoints,handles.theta);
+        
+        handles.P = pout;
+        
+        plot(handles.P(1,:) + handles.cenX, handles.P(2,:) + handles.cenY,'-r');
+        
+        
+        set(handles.accept,'Enable','on')
+        
+    end
+    
+    
+    
+else
     set(handles.fnameBox,'String','')
     set(handles.expOpts,'Enable','on')
     cla(handles.imDisplay)
@@ -924,7 +977,7 @@ if handles.fileNUM == length(handles.filelist)
 end
 
 
-
+guidata(hObject, handles);
 
 
 
