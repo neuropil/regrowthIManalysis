@@ -838,11 +838,24 @@ if handles.fileNUM < length(handles.filelist.String)+1
         % ci = 2 = Green Channel
 
         image2analyze = handles.liveImage(:,:,ci);
-        im2dB = im2double(image2analyze);
+        
+        % Compute threshold using Otsu's method
+        [level,~] = graythresh(image2analyze);
+        % Apply threshold and create threshold mask
+        BWim = im2bw(image2analyze,level);
+        % Copy image and apply mask
+        image2analyze2 = image2analyze;
+        image2analyze2(~BWim) = 0;
+        
+        % Image is now thresholded and converted to DOUBLE
+        im2dB = im2double(image2analyze2);
         
         % User choose Analyze Channel
         wholePolymask = poly2mask(handles.PolyXC,handles.PolyYC,handles.dim1,handles.dim2); % Get mask
-        handles.pixelInfo = regionprops(wholePolymask,im2dB,'MeanIntensity','PixelValues','Area');
+        handles.pixelInfo = regionprops(wholePolymask,im2dB,'MeanIntensity','MaxIntensity','PixelValues','Area');
+        
+        polyAREA = handles.dim1*handles.dim2;
+        
         
         % Calculate quadrant corners
         
@@ -877,18 +890,18 @@ if handles.fileNUM < length(handles.filelist.String)+1
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
         % Calculate pixel threshold
-        pixelThreshold = mean(handles.pixelInfo.PixelValues) + (std(double(handles.pixelInfo.PixelValues))*2);
+%         pixelThreshold = mean(handles.pixelInfo.PixelValues) + (std(double(handles.pixelInfo.PixelValues))*2);
 %         pixelThreshold = median(handles.pixelInfo.PixelValues)+ iqr(handles.pixelInfo.PixelValues);
         % Copy original image
-        image2thresh = im2dB;
+%         image2thresh = image2analyze2;
         % Exclude all pixels outside polygon
-        image2thresh(~wholePolymask) = 0;
+%         image2thresh(~wholePolymask) = 0;
         % Create image with pixels above threshold
-        finalImage = image2thresh > pixelThreshold;
+%         finalImage = image2thresh > pixelThreshold;
         % Calculate area of pixels above threshold
-        densityArea = bwarea(finalImage);
+        densityArea = handles.pixelInfo.Area;
         % Calculate fraction of area occupied by pixels above threshold
-        handles.pixelInfo.fracDenArea = densityArea/handles.pixelInfo.Area;
+        handles.pixelInfo.fracDenArea = densityArea/polyAREA;
         
         % Save data from each section
         handles.PixelDataOut.OD{handles.fileNUM,ci} = handles.pixelInfo;
