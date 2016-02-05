@@ -7,26 +7,28 @@ imshow(imtest)
 %% Extract channel of interest (to trace) 
 close all
 blankImage = uint16(zeros(dim1,dim2,3));
-blankImage(:,:,2) = imtest(:,:,2);
+blankImage(:,:,1) = imtest(:,:,1);
 chan2disp = blankImage;
 figure;
 imshow(chan2disp)
 
 %% Make inverted image.
 close all
-image2invert = imtest(:,:,2);
+image2invert = imtest(:,:,1);
 invertImInterest = 65535-image2invert;
-
+%%
 figure;
 imh = imshow(invertImInterest);
 
-%% Background box
+% Background box
 
 h = imrect(gca);
 pos = getPosition(h);
-delete(h)
+
 
 BW = createMask(h,imh);
+
+delete(h)
 
 greenIm = imtest(:,:,2);
 greenImN = im2double(greenIm);
@@ -101,7 +103,7 @@ redArea_b1 = bwarea(redMeasure2_b1);
 pxRd_b1 = redArea_b1/allArea;
 
 
-%% NEXT BOXES
+% NEXT BOXES
 xPoints = 1100;
 yPoints = 300;
 
@@ -146,7 +148,7 @@ redArea_b2 = bwarea(redMeasure2_b2);
 pxRd_b2 = redArea_b2/allArea;
 
 
-%%
+%
 
 xPoints = 1100;
 yPoints = 300;
@@ -190,7 +192,7 @@ redArea_b3 = bwarea(redMeasure2_b3);
 
 pxRd_b3 = redArea_b3/allArea;
 
-%%
+%
 
 xPoints = 1100;
 yPoints = 300;
@@ -234,7 +236,7 @@ redArea_b4 = bwarea(redMeasure2_b4);
 
 pxRd_b4 = redArea_b4/allArea;
 
-%%
+%
 
 xPoints = 1100;
 yPoints = 300;
@@ -278,7 +280,7 @@ redArea_b5 = bwarea(redMeasure2_b5);
 
 pxRd_b5 = redArea_b5/allArea;
 
-%%
+%
 
 %%%%%%
 
